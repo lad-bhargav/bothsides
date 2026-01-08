@@ -8,4 +8,6 @@ export interface Video {
     duration: number
     createdAt: Date
     updatedAt: Date
+    likesCount: number
+    dislikesCount: number
 }

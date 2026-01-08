@@ -1,20 +1,28 @@
+'use client'
+
 import React, {useState, useEffect, useCallback} from 'react'
 import {getCldImageUrl, getCldVideoUrl} from "next-cloudinary"
 import { Download, Clock, FileDown, FileUp } from "lucide-react";
 import dayjs from 'dayjs';
 import realtiveTime from "dayjs/plugin/relativeTime"
-import {filesize} from "filesize"
 import { Video } from '@/types';
+import { ThumbsUp, ThumbsDown } from "lucide-react";
+import { useUser } from '@clerk/nextjs';
 
 dayjs.extend(realtiveTime)
 
 interface VideoCardProps {
     video: Video;
     onDownload: (url: string, title: string) => void;
+    like:number;
+    dislike:number;
+    onReact: () => void;
 }
-const VideoCard:React.FC<VideoCardProps> = ({video,onDownload}) => {
+
+const VideoCard:React.FC<VideoCardProps> = ({video,onDownload,like,dislike,onReact}) => {
     const [isHovered,setIsHovered] = useState(false);
     const [previewError,setPreviewError] = useState(false);
+    const {user,isLoaded} = useUser();
 
     const getThumbnailUrl = useCallback((publicId:string)=>{
         return getCldImageUrl({
@@ -46,19 +54,41 @@ const VideoCard:React.FC<VideoCardProps> = ({video,onDownload}) => {
         })
     },[]);
 
-    const formatSize = useCallback((size:number)=>{
-        return filesize(size);
-    },[]);
+    const handleLike = async() => {
+        if (!isLoaded || !user) return;
+        const res = await fetch(`/api/video/react`,{
+            method:"POST",
+            headers:{ "Content-Type": "application/json" },
+            body:JSON.stringify({
+                videoId:video.id,
+                value:1,
+            })
+        })
+        if(res.ok){
+           onReact();
+        }
+    }
+
+    const handleDislike = async() => {
+        if (!isLoaded || !user) return;
+        const res = await fetch(`api/video/react`,{
+          method:"POST",
+          headers:{ "Content-Type": "application/json" },
+          body:JSON.stringify({
+              videoId:video.id,
+              value:-1,
+          })
+        })
+        if(res.ok){
+           onReact();
+        }
+    }
 
     const formatDuration = useCallback((seconds: number) => {
         const minutes = Math.floor(seconds / 60);
         const remainingSeconds = Math.round(seconds % 60);
         return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
       }, []);
-
-      const compressionPercentage = Math.round(
-        (1 - Number(video.compressedSize) / Number(video.originalSize)) * 100
-      );
 
       useEffect(() => {
         setPreviewError(false);
@@ -111,26 +141,24 @@ const VideoCard:React.FC<VideoCardProps> = ({video,onDownload}) => {
               Uploaded {dayjs(video.createdAt).fromNow()}
             </p>
             <div className="grid grid-cols-2 gap-4 text-sm">
-              <div className="flex items-center">
-                <FileUp size={18} className="mr-2 text-primary" />
-                <div>
-                  <div className="font-semibold">Original</div>
-                  <div>{formatSize(Number(video.originalSize))}</div>
-                </div>
+              <div className="flex items-center gap-1">
+                  <div onClick={handleLike} className='flex cursor-pointer h-10 w-10 hover:bg-gray-200/20 rounded-full items-center justify-center'>
+                      <ThumbsUp size={20} className="mr-1" />
+                  </div>
+                  <div>
+                    <p className='text-lg'>{like}</p>
+                  </div>
               </div>
-              <div className="flex items-center">
-                <FileDown size={18} className="mr-2 text-secondary" />
-                <div>
-                  <div className="font-semibold">Compressed</div>
-                  <div>{formatSize(Number(video.compressedSize))}</div>
-                </div>
+              <div className="flex items-center gap-1">
+                <div onClick={handleDislike} className='flex cursor-pointer h-10 w-10 hover:bg-gray-200/20 rounded-full items-center justify-center'>
+                      <ThumbsDown size={20} className="mr-1" />
+                  </div>
+                  <div>
+                    <p className='text-lg'>{dislike}</p>
+                  </div>
               </div>
             </div>
-            <div className="flex justify-between items-center mt-4">
-              <div className="text-sm font-semibold">
-                Compression:{" "}
-                <span className="text-accent">{compressionPercentage}%</span>
-              </div>
+            <div className="card-actions justify-end mt-4">
               <button
                 className="btn btn-primary btn-sm"
                 onClick={() =>

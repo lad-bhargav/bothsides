@@ -1,4 +1,5 @@
-'use client'
+"use client"
+
 import VideoCard from '@/components/VideoCard';
 import { Video } from '@/types'
 import React, { useCallback, useEffect, useState } from 'react'
@@ -63,6 +64,9 @@ const Home = () => {
                         key={video.id}
                         video={video}
                         onDownload={handleDownload}
+                        like={video.likesCount}
+                        dislike={video.dislikesCount}
+                        onReact={fetchVideos}
                     />
                 ))
               }

@@ -1,25 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { v2 as cloudinary } from 'cloudinary';
 import { auth } from '@clerk/nextjs/server';
-import { PrismaClient } from '@prisma/client';
-
-import { PrismaPg } from "@prisma/adapter-pg";
-import { Pool } from "pg";
+import prisma from '@/lib/prisma';
 
 // Add these exports at the top of your file
 export const maxDuration = 300; // 5 minutes for video upload
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-});
-
-const adapter = new PrismaPg(pool);
-
-export const prisma = new PrismaClient({
-  adapter,
-});
 
 // Configuration
 cloudinary.config({
