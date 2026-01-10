@@ -10,4 +10,5 @@ export interface Video {
     updatedAt: Date
     likesCount: number
     dislikesCount: number
+    reaction?: 1 | -1 | 0;
 }

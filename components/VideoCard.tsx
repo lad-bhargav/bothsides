@@ -2,12 +2,13 @@
 
 import React, {useState, useEffect, useCallback} from 'react'
 import {getCldImageUrl, getCldVideoUrl} from "next-cloudinary"
-import { Download, Clock, FileDown, FileUp } from "lucide-react";
+import { Download, Clock, FileDown, FileUp, Share, Share2 } from "lucide-react";
 import dayjs from 'dayjs';
 import realtiveTime from "dayjs/plugin/relativeTime"
 import { Video } from '@/types';
 import { ThumbsUp, ThumbsDown } from "lucide-react";
 import { useUser } from '@clerk/nextjs';
+import ShareBtn from './Share';
 
 dayjs.extend(realtiveTime)
 
@@ -23,6 +24,10 @@ const VideoCard:React.FC<VideoCardProps> = ({video,onDownload,like,dislike,onRea
     const [isHovered,setIsHovered] = useState(false);
     const [previewError,setPreviewError] = useState(false);
     const {user,isLoaded} = useUser();
+    const [isLiked,setIsliked] = useState<boolean>(false);
+    const [isDisliked,setIsDisliked] = useState<boolean>(false);
+    const [likesCount, setLikesCount] = useState(like);
+    const [dislikesCount, setDislikesCount] = useState(dislike);
 
     const getThumbnailUrl = useCallback((publicId:string)=>{
         return getCldImageUrl({
@@ -54,33 +59,102 @@ const VideoCard:React.FC<VideoCardProps> = ({video,onDownload,like,dislike,onRea
         })
     },[]);
 
+    useEffect(() => {
+        const fetchReactionStatus = async () => {
+            try {
+                const response = await fetch(`/api/video/react?videoId=${video.id}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    setLikesCount(data.likesCount);
+                    setDislikesCount(data.dislikesCount);
+                    if (data.userReaction === 1) {
+                        setIsliked(true);
+                        setIsDisliked(false);
+                    } else if (data.userReaction === -1) {
+                        setIsliked(false);
+                        setIsDisliked(true);
+                    } else {
+                        setIsliked(false);
+                        setIsDisliked(false);
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching reaction status:', error);
+            }
+        };
+
+        if (isLoaded && user) {
+            fetchReactionStatus();
+        }
+    }, [video.id, isLoaded, user]);
+
     const handleLike = async() => {
-        if (!isLoaded || !user) return;
-        const res = await fetch(`/api/video/react`,{
-            method:"POST",
-            headers:{ "Content-Type": "application/json" },
-            body:JSON.stringify({
-                videoId:video.id,
-                value:1,
-            })
-        })
-        if(res.ok){
-           onReact();
+        if (!user) return;
+
+        try {
+            const response = await fetch('/api/video/react', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    videoId: video.id,
+                    value: 1
+                })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setLikesCount(data.likesCount);
+                setDislikesCount(data.dislikesCount);
+                
+                if (data.userReaction === 1) {
+                    setIsliked(true);
+                    setIsDisliked(false);
+                } else {
+                    setIsliked(false);
+                    setIsDisliked(false);
+                }
+                
+                onReact();
+            }
+        } catch (error) {
+            console.error('Error handling like:', error);
         }
     }
 
     const handleDislike = async() => {
-        if (!isLoaded || !user) return;
-        const res = await fetch(`api/video/react`,{
-          method:"POST",
-          headers:{ "Content-Type": "application/json" },
-          body:JSON.stringify({
-              videoId:video.id,
-              value:-1,
-          })
-        })
-        if(res.ok){
-           onReact();
+        if (!user) return;
+
+        try {
+            const response = await fetch('/api/video/react', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    videoId: video.id,
+                    value: -1
+                })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setLikesCount(data.likesCount);
+                setDislikesCount(data.dislikesCount);
+                
+                if (data.userReaction === -1) {
+                    setIsDisliked(true);
+                    setIsliked(false);
+                } else {
+                    setIsDisliked(false);
+                    setIsliked(false);
+                }
+                
+                onReact();
+            }
+        } catch (error) {
+            console.error('Error handling dislike:', error);
         }
     }
 
@@ -100,76 +174,100 @@ const VideoCard:React.FC<VideoCardProps> = ({video,onDownload,like,dislike,onRea
 
   return (
     <div
-          className="card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-300"
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
-        >
-          <figure className="aspect-video relative">
-            {isHovered ? (
-              previewError ? (
-                <div className="w-full h-full flex items-center justify-center bg-gray-200">
-                  <p className="text-red-500">Preview not available</p>
-                </div>
-              ) : (
-                <video
-                  src={getPreviewVideoUrl(video.publicId)}
-                  autoPlay
-                  muted
-                  loop
-                  className="w-full h-full object-cover"
-                  onError={handlePreviewError}
-                />
-              )
-            ) : (
-              <img
-                src={getThumbnailUrl(video.publicId)}
-                alt={video.title}
-                className="w-full h-full object-cover"
-              />
-            )}
-            <div className="absolute bottom-2 right-2 bg-base-100 bg-opacity-70 px-2 py-1 rounded-lg text-sm flex items-center">
-              <Clock size={16} className="mr-1" />
-              {formatDuration(video.duration)}
+      className="card bg-base-100 p-2 shadow-xl h-125 w-75 flex flex-col hover:shadow-2xl transition-all duration-300"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      {/* VIDEO — 80% */}
+      <figure className="relative flex-8">
+        {isHovered ? (
+          previewError ? (
+            <div className="w-full h-full flex items-center justify-center bg-gray-200">
+              <p className="text-red-500">Preview not available</p>
             </div>
-          </figure>
-          <div className="card-body p-4">
-            <h2 className="card-title text-lg font-bold">{video.title}</h2>
-            <p className="text-sm text-base-content opacity-70 mb-4">
-              {video.description}
-            </p>
-            <p className="text-sm text-base-content opacity-70 mb-4">
-              Uploaded {dayjs(video.createdAt).fromNow()}
-            </p>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div className="flex items-center gap-1">
-                  <div onClick={handleLike} className='flex cursor-pointer h-10 w-10 hover:bg-gray-200/20 rounded-full items-center justify-center'>
-                      <ThumbsUp size={20} className="mr-1" />
-                  </div>
-                  <div>
-                    <p className='text-lg'>{like}</p>
-                  </div>
-              </div>
-              <div className="flex items-center gap-1">
-                <div onClick={handleDislike} className='flex cursor-pointer h-10 w-10 hover:bg-gray-200/20 rounded-full items-center justify-center'>
-                      <ThumbsDown size={20} className="mr-1" />
-                  </div>
-                  <div>
-                    <p className='text-lg'>{dislike}</p>
-                  </div>
-              </div>
-            </div>
-            <div className="card-actions justify-end mt-4">
-              <button
-                className="btn btn-primary btn-sm"
-                onClick={() =>
-                  onDownload(getFullVideoUrl(video.publicId), video.title)
-                }
+          ) : (
+            <video
+              src={getPreviewVideoUrl(video.publicId)}
+              autoPlay
+              muted
+              loop
+              className="w-full h-full object-cover"
+              onError={handlePreviewError}
+            />
+          )
+        ) : (
+          <img
+            src={getThumbnailUrl(video.publicId)}
+            alt={video.title}
+            className="w-full h-full object-cover"
+          />
+        )}
+
+        <div className="absolute bottom-2 right-2 bg-base-100 bg-opacity-70 px-2 py-1 rounded-lg text-sm flex items-center">
+          <Clock size={16} className="mr-1" />
+          {formatDuration(video.duration)}
+        </div>
+      </figure>
+
+      {/* CONTENT — 20% */}
+      <div className="card-body p-3 flex flex-col justify-between flex-2 overflow-hidden">
+        <div>
+          <h2 className="text-sm font-bold line-clamp-1">
+            {video.title}
+          </h2>
+
+          <p className="text-xs text-base-content opacity-70 line-clamp-2">
+            {video.description}
+          </p>
+
+          <p className="text-xs text-base-content opacity-60 mt-1">
+            {dayjs(video.createdAt).fromNow()}
+          </p>
+        </div>
+
+        <div className="flex items-center justify-between">
+          <div className="flex gap-3">
+            <div className="flex items-center gap-1">
+              <div
+                onClick={handleLike}
+                className="flex cursor-pointer h-8 w-8 hover:bg-gray-200/20 rounded-full items-center justify-center"
               >
-                <Download size={16} />
-              </button>
+                <ThumbsUp
+                  size={16}
+                  fill={isLiked ? "currentColor" : "none"}
+                  stroke={isLiked ? "none" : "currentColor"}
+                />
+              </div>
+              <span className="text-sm">{likesCount}</span>
+            </div>
+
+            <div className="flex items-center gap-1">
+              <div
+                onClick={handleDislike}
+                className="flex cursor-pointer h-8 w-8 hover:bg-gray-200/20 rounded-full items-center justify-center"
+              >
+                <ThumbsDown
+                  size={16}
+                  fill={isDisliked ? "currentColor" : "none"}
+                  stroke={isDisliked ? "none" : "currentColor"}
+                />
+              </div>
+              <span className="text-sm">{dislikesCount}</span>
             </div>
           </div>
+
+          <button
+            className="btn btn-primary btn-xs ml-5"
+            onClick={() =>
+              onDownload(getFullVideoUrl(video.publicId), video.title)
+            }
+          >
+            <Download size={14} />
+          </button>
+          <ShareBtn/>
         </div>
+      </div>
+    </div>    
   )
 }
 
