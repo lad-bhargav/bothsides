@@ -2,8 +2,9 @@
 
 import React, {useState, useEffect, useCallback} from 'react'
 import {getCldImageUrl, getCldVideoUrl} from "next-cloudinary"
-import { Download, Clock, FileDown, FileUp, Share, Share2 } from "lucide-react";
+import { Download, Clock } from "lucide-react";
 import dayjs from 'dayjs';
+import { MoreVertical } from "lucide-react";
 import realtiveTime from "dayjs/plugin/relativeTime"
 import { Video } from '@/types';
 import { ThumbsUp, ThumbsDown } from "lucide-react";
@@ -203,6 +204,10 @@ const VideoCard:React.FC<VideoCardProps> = ({video,onDownload,like,dislike,onRea
           />
         )}
 
+        <div className="absolute top-2 right-2 bg-base-100 bg-opacity-70 px-2 py-1 rounded-lg text-sm flex items-center cursor-pointer">
+                <MoreVertical size={16} />
+        </div>
+
         <div className="absolute bottom-2 right-2 bg-base-100 bg-opacity-70 px-2 py-1 rounded-lg text-sm flex items-center">
           <Clock size={16} className="mr-1" />
           {formatDuration(video.duration)}
@@ -257,7 +262,7 @@ const VideoCard:React.FC<VideoCardProps> = ({video,onDownload,like,dislike,onRea
           </div>
 
           <button
-            className="btn btn-primary btn-xs ml-5"
+            className="btn btn-primary btn-xs ml-12"
             onClick={() =>
               onDownload(getFullVideoUrl(video.publicId), video.title)
             }
