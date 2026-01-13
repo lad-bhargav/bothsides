@@ -67,6 +67,7 @@ const myVideos = () => {
                         like={video.likesCount}
                         dislike={video.dislikesCount}
                         onReact={fetchMyVideos}
+                        onDelete={fetchMyVideos}
                     />
                 ))
               }

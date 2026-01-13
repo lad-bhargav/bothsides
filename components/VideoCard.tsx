@@ -19,9 +19,10 @@ interface VideoCardProps {
     like:number;
     dislike:number;
     onReact: () => void;
+    onDelete?: () => void;
 }
 
-const VideoCard:React.FC<VideoCardProps> = ({video,onDownload,like,dislike,onReact}) => {
+const VideoCard:React.FC<VideoCardProps> = ({video,onDownload,like,dislike,onReact,onDelete}) => {
     const [isHovered,setIsHovered] = useState(false);
     const [previewError,setPreviewError] = useState(false);
     const {user,isLoaded} = useUser();
@@ -228,7 +229,7 @@ const VideoCard:React.FC<VideoCardProps> = ({video,onDownload,like,dislike,onRea
               {
                 isUserVideo && (
                   <div className="absolute top-2 right-2 bg-base-100 bg-opacity-70 px-2 py-1 rounded-lg text-sm flex items-center cursor-pointer">
-                      <More/>
+                      <More videoId={video.id} onDelete={onDelete}/>
                    </div>
                 )
               }

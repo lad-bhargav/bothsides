@@ -11,7 +11,9 @@ const Home = () => {
 
   const fetchVideos = useCallback(async ()=>{
         try {
-          const res = await fetch('api/videos');
+          const res = await fetch('api/videos',{
+             cache:"no-store",
+          });
           if(!res.ok){
             throw new Error('Failed to fetch videos');
           }
@@ -66,6 +68,7 @@ const Home = () => {
                         like={video.likesCount}
                         dislike={video.dislikesCount}
                         onReact={fetchVideos}
+                        onDelete={fetchVideos}
                     />
                 ))
               }

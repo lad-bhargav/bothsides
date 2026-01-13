@@ -37,3 +37,24 @@ export async function GET(req:NextRequest) {
         await prisma.$disconnect();
     }
 }
+
+export async function DELETE(req:NextRequest) {
+    try {
+        const {videoId} = await req.json();
+        const {userId} = await auth();
+
+        if(!userId)return NextResponse.json({error:"unauthorized"},{status:401});
+
+        const deletedVideo = await prisma.video.delete({
+            where:{id:videoId},
+        });
+
+        return NextResponse.json({success:true});
+        
+    } catch (error) {
+        console.log(error);
+        return NextResponse.json({error:"error in deleting video"},{status:401});
+    }finally{
+        await prisma.$disconnect();
+    }
+}
