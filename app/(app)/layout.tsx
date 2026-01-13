@@ -1,4 +1,4 @@
-"use client";
+"use client"
 
 import React, { useState } from "react";
 import Link from "next/link";
@@ -31,12 +31,20 @@ export default function AppLayout({
   const { user } = useUser();
 
   const handleLogoClick = () => {
-    router.push("/");
+    router.push("/home");
   };
 
   const handleSignOut = async () => {
     await signOut();
   };
+
+  const handleSignup = () => {
+      router.push("/sign-up");
+  }
+
+  const handleSignIn = () => {
+      router.push("/sign-in");
+  }
 
   return (
     <div className="drawer lg:drawer-open">
@@ -90,11 +98,19 @@ export default function AppLayout({
                   </button>
                 </>
               )}
+              {
+                !user && (
+                   <div className="space-x-4">
+                        <button className="btn btn-primary" onClick={handleSignup}>sign-up</button>
+                        <button className="btn btn-primary" onClick={handleSignIn}>sign-in</button>
+                   </div>
+                )
+              }
             </div>
           </div>
         </header>
         {/* Page content */}
-        <main className="flex-grow">
+        <main className="grow">
           <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 my-8">
             {children}
           </div>
@@ -106,7 +122,7 @@ export default function AppLayout({
           <div className="flex items-center justify-center py-4">
             <PlaySquare className="w-10 h-10 text-primary"/>
           </div>
-          <ul className="menu p-4 w-full text-base-content flex-grow">
+          <ul className="menu p-4 w-full text-base-content grow">
             {sidebarItems.map((item) => (
               <li key={item.href} className="mb-2">
                 <Link

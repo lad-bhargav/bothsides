@@ -4,12 +4,12 @@ import React, {useState, useEffect, useCallback} from 'react'
 import {getCldImageUrl, getCldVideoUrl} from "next-cloudinary"
 import { Download, Clock } from "lucide-react";
 import dayjs from 'dayjs';
-import { MoreVertical } from "lucide-react";
 import realtiveTime from "dayjs/plugin/relativeTime"
 import { Video } from '@/types';
 import { ThumbsUp, ThumbsDown } from "lucide-react";
 import { useUser } from '@clerk/nextjs';
 import ShareBtn from './Share';
+import More from './More';
 
 dayjs.extend(realtiveTime)
 
@@ -29,6 +29,7 @@ const VideoCard:React.FC<VideoCardProps> = ({video,onDownload,like,dislike,onRea
     const [isDisliked,setIsDisliked] = useState<boolean>(false);
     const [likesCount, setLikesCount] = useState(like);
     const [dislikesCount, setDislikesCount] = useState(dislike);
+    const [isUserVideo,setIsUserVideo] = useState<boolean>(false);
 
     const getThumbnailUrl = useCallback((publicId:string)=>{
         return getCldImageUrl({
@@ -159,6 +160,26 @@ const VideoCard:React.FC<VideoCardProps> = ({video,onDownload,like,dislike,onRea
         }
     }
 
+    useEffect(()=>{
+       CheckMoreOpt();
+    },[video.id,isUserVideo]);
+
+    const CheckMoreOpt = async() => {
+        try {
+           const response = await fetch(`/api/checkvideo?videoId=${video.id}`);
+            if(!response.ok){
+                setIsUserVideo(false);
+                return;
+            }
+            const data = await response.json();
+            setIsUserVideo(Boolean(data.success));
+        } catch (error) {
+           console.log(error);
+           setIsUserVideo(false);
+           return;
+        }
+    }
+
     const formatDuration = useCallback((seconds: number) => {
         const minutes = Math.floor(seconds / 60);
         const remainingSeconds = Math.round(seconds % 60);
@@ -204,9 +225,13 @@ const VideoCard:React.FC<VideoCardProps> = ({video,onDownload,like,dislike,onRea
           />
         )}
 
-        <div className="absolute top-2 right-2 bg-base-100 bg-opacity-70 px-2 py-1 rounded-lg text-sm flex items-center cursor-pointer">
-                <MoreVertical size={16} />
-        </div>
+              {
+                isUserVideo && (
+                  <div className="absolute top-2 right-2 bg-base-100 bg-opacity-70 px-2 py-1 rounded-lg text-sm flex items-center cursor-pointer">
+                      <More/>
+                   </div>
+                )
+              }
 
         <div className="absolute bottom-2 right-2 bg-base-100 bg-opacity-70 px-2 py-1 rounded-lg text-sm flex items-center">
           <Clock size={16} className="mr-1" />
