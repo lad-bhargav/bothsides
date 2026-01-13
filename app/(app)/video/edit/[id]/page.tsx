@@ -1,5 +1,5 @@
 'use client'
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 
@@ -11,7 +11,7 @@ interface FormValues{
 const EditPage = () => {
     const [title,setTitle] = useState<string>("");
     const [description,setDescription] = useState<string>("");
-
+    const router = useRouter();
   const {
       register,
       handleSubmit,
@@ -42,8 +42,24 @@ const EditPage = () => {
         }
   }
 
-  const handleOnSubmit = async()=>{
-        
+  const handleOnSubmit = async(data:FormValues)=>{
+      try {
+         const res = await fetch(`/api/video?videoId=${videoId}`,{
+            method:"PUT",
+            headers:{
+              'Content-Type':'application/json',
+            },
+            body:JSON.stringify({
+               title:data.title,
+               description:data.description,
+            })
+         });
+
+         if(!res.ok)throw new Error("failed to update video");
+         router.push("/myvideos");
+      } catch (error) {
+        console.log(error);
+      }
   }
 
   return (
