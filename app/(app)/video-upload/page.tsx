@@ -46,7 +46,7 @@ const VideoUpload = () => {
 
     try {
       // Step 1: Get upload credentials from your API
-      const credentialsRes = await fetch('/api/video-upload/credentials', {
+      const credentialsRes = await fetch('/api/video-upload', {
         method: 'POST',
       });
 
@@ -76,7 +76,7 @@ const VideoUpload = () => {
 
       // Upload to Cloudinary
       const cloudinaryUpload = new Promise<any>((resolve, reject) => {
-        xhr.open('POST', `https://api.cloudinary.com/v1_1/${cloudName}/video/upload`);
+        xhr.open('POST', `https://api.cloudinary.com/v1_1/${cloudName}/video-uploads-bothsides`);
         
         xhr.onload = () => {
           if (xhr.status === 200) {
