@@ -1,7 +1,3 @@
-// ============================================
-// FILE 1: app/(app)/video-upload/page.tsx
-// REPLACE YOUR ENTIRE FILE WITH THIS
-// ============================================
 'use client';
 
 import { useRouter } from 'next/navigation';
@@ -19,8 +15,6 @@ const MAX_FILE_SIZE = 70 * 1024 * 1024; // 70MB
 const VideoUpload = () => {
   const router = useRouter();
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [error, setError] = useState<string | null>(null);
 
   const {
     register,
@@ -30,113 +24,42 @@ const VideoUpload = () => {
 
   const handleOnSubmit = async (data: FormValues) => {
     const file = data.file?.[0];
-    if (!file) {
-      setError('Please select a video file');
-      return;
-    }
+    if (!file) return;
 
     if (file.size > MAX_FILE_SIZE) {
-      setError('File size exceeds 70MB limit.');
+      alert('File size exceeds 70MB limit.');
       return;
     }
 
     setIsUploading(true);
-    setUploadProgress(0);
-    setError(null);
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('title', data.title);
+    formData.append('description', data.description ?? '');
+    formData.append('originalSize', file.size.toString());
 
     try {
-      // Step 1: Get upload credentials from your API
-      const credentialsRes = await fetch('/api/video-upload', {
+      const res = await fetch('/api/video-upload', {
         method: 'POST',
+        body: formData,
       });
 
-      if (!credentialsRes.ok) {
-        throw new Error('Failed to get upload credentials');
+      if (res.ok) {
+        router.push('/myvideos');
+      } else {
+        throw new Error('Upload failed');
       }
-
-      const { signature, timestamp, cloudName, apiKey } = await credentialsRes.json();
-
-      // Step 2: Upload directly to Cloudinary
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('signature', signature);
-      formData.append('timestamp', timestamp.toString());
-      formData.append('api_key', apiKey);
-      formData.append('folder', 'video-uploads-bothsides');
-
-      const xhr = new XMLHttpRequest();
-      
-      // Track upload progress
-      xhr.upload.addEventListener('progress', (e) => {
-        if (e.lengthComputable) {
-          const percentComplete = (e.loaded / e.total) * 100;
-          setUploadProgress(Math.round(percentComplete));
-        }
-      });
-
-      // Upload to Cloudinary
-      const cloudinaryUpload = new Promise<any>((resolve, reject) => {
-        xhr.open('POST', `https://api.cloudinary.com/v1_1/${cloudName}/video-uploads-bothsides`);
-        
-        xhr.onload = () => {
-          if (xhr.status === 200) {
-            resolve(JSON.parse(xhr.responseText));
-          } else {
-            reject(new Error(`Upload failed with status ${xhr.status}`));
-          }
-        };
-        
-        xhr.onerror = () => reject(new Error('Network error during upload'));
-        xhr.send(formData);
-      });
-
-      const cloudinaryResult = await cloudinaryUpload;
-
-      console.log('Cloudinary upload successful:', cloudinaryResult.public_id);
-
-      // Step 3: Save video metadata to database
-      const saveRes = await fetch('/api/video-upload', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          title: data.title,
-          description: data.description ?? '',
-          publicId: cloudinaryResult.public_id,
-          originalSize: file.size.toString(),
-          compressedSize: cloudinaryResult.bytes.toString(),
-          duration: cloudinaryResult.duration,
-        }),
-      });
-
-      if (!saveRes.ok) {
-        const errorData = await saveRes.json();
-        throw new Error(errorData.error || 'Failed to save video metadata');
-      }
-
-      console.log('Video metadata saved successfully');
-
-      // Redirect to videos page
-      router.push('/myvideos');
-    } catch (err) {
-      console.error('Upload error:', err);
-      setError(err instanceof Error ? err.message : 'Upload failed. Please try again.');
+    } catch (error) {
+      console.error(error);
     } finally {
       setIsUploading(false);
-      setUploadProgress(0);
     }
   };
 
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4 mt-5">Upload Video</h1>
-
-      {error && (
-        <div className="alert alert-error mb-4">
-          <span>{error}</span>
-        </div>
-      )}
 
       <form onSubmit={handleSubmit(handleOnSubmit)} className="space-y-4">
         {/* Title */}
@@ -149,7 +72,6 @@ const VideoUpload = () => {
             placeholder="Enter video title"
             {...register('title', { required: true })}
             className="input input-bordered w-full"
-            disabled={isUploading}
           />
           {errors.title && (
             <span className="text-error text-sm">Title is required</span>
@@ -165,7 +87,6 @@ const VideoUpload = () => {
             placeholder="Enter description"
             {...register('description')}
             className="textarea textarea-bordered w-full"
-            disabled={isUploading}
           />
         </div>
 
@@ -179,29 +100,11 @@ const VideoUpload = () => {
             accept="video/*"
             {...register('file', { required: true })}
             className="file-input file-input-bordered w-full"
-            disabled={isUploading}
           />
           {errors.file && (
             <span className="text-error text-sm">Please choose a video</span>
           )}
         </div>
-
-        {/* Upload Progress */}
-        {isUploading && (
-          <div className="space-y-2">
-            <div className="w-full bg-gray-200 rounded-full h-2.5">
-              <div
-                className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
-                style={{ width: `${uploadProgress}%` }}
-              ></div>
-            </div>
-            <p className="text-sm text-center">
-              {uploadProgress < 100 
-                ? `Uploading to Cloudinary... ${uploadProgress}%` 
-                : 'Saving to database...'}
-            </p>
-          </div>
-        )}
 
         {/* Submit Button */}
         <button
@@ -209,9 +112,7 @@ const VideoUpload = () => {
           disabled={isUploading}
           className="btn btn-primary mt-4"
         >
-          {isUploading 
-            ? (uploadProgress < 100 ? `Uploading... ${uploadProgress}%` : 'Saving...') 
-            : 'Upload Video'}
+          {isUploading ? 'Uploading...' : 'Upload Video'}
         </button>
       </form>
     </div>
