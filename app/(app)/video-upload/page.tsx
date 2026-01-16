@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useRouter } from 'next/navigation';
@@ -7,7 +8,7 @@ import { useForm } from 'react-hook-form';
 type FormValues = {
   title: string;
   description?: string;
-  file: FileList;
+  file: FileList | null;
 };
 
 const MAX_FILE_SIZE = 70 * 1024 * 1024; // 70MB
@@ -23,7 +24,7 @@ const VideoUpload = () => {
   } = useForm<FormValues>();
 
   const handleOnSubmit = async (data: FormValues) => {
-    const file = data.file?.[0];
+    const file = data.file?.item(0);
     if (!file) return;
 
     if (file.size > MAX_FILE_SIZE) {
